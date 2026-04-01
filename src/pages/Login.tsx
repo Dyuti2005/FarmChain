@@ -108,7 +108,7 @@ export default function Login({ lang }: LoginProps) {
     setListeningField(field);
 
     // Prompt the user
-    const promptKey = field === 'aadhaar' ? 'login.voice_aadhaar_prompt' : 'login.voice_password_prompt';
+    const promptKey = field === 'name' ? 'login.voice_name_prompt' : field === 'aadhaar' ? 'login.voice_aadhaar_prompt' : 'login.voice_password_prompt';
     speak(lt(promptKey, lang), lang);
 
     // Delay recognition start so TTS prompt finishes
