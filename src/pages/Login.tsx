@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sprout, ShoppingBasket, Mail, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff } from 'lucide-react';
+import { Sprout, ShoppingBasket, Mail, Lock, CreditCard, Loader2, Eye, EyeOff, Mic, MicOff, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Language, speechLangCode } from '@/lib/i18n';
 
@@ -14,7 +14,10 @@ const translations: Record<string, Record<Language, string>> = {
   'login.subtitle': { en: 'Choose your role to get started', hi: 'शुरू करने के लिए अपनी भूमिका चुनें', kn: 'ಪ್ರಾರಂಭಿಸಲು ನಿಮ್ಮ ಪಾತ್ರವನ್ನು ಆರಿಸಿ' },
   'login.farmer': { en: 'Farmer', hi: 'किसान', kn: 'ರೈತ' },
   'login.consumer': { en: 'Consumer', hi: 'उपभोक्ता', kn: 'ಗ್ರಾಹಕ' },
+  'login.name': { en: 'Your Name', hi: 'आपका नाम', kn: 'ನಿಮ್ಮ ಹೆಸರು' },
   'login.email': { en: 'Email', hi: 'ईमेल', kn: 'ಇಮೇಲ್' },
+  'login.voice_name_prompt': { en: 'Please say your full name now.', hi: 'कृपया अब अपना पूरा नाम बोलें।', kn: 'ದಯವಿಟ್ಟು ಈಗ ನಿಮ್ಮ ಪೂರ್ಣ ಹೆಸರನ್ನು ಹೇಳಿ.' },
+  'login.name_accepted': { en: 'Name recorded.', hi: 'नाम दर्ज हुआ।', kn: 'ಹೆಸರು ದಾಖಲಾಗಿದೆ.' },
   'login.password': { en: 'Password / PIN', hi: 'पासवर्ड / पिन', kn: 'ಪಾಸ್ವರ್ಡ್ / ಪಿನ್' },
   'login.aadhaar': { en: 'Aadhaar / KCC Number', hi: 'आधार / KCC नंबर', kn: 'ಆಧಾರ್ / KCC ಸಂಖ್ಯೆ' },
   'login.signin': { en: 'Sign In', hi: 'साइन इन', kn: 'ಸೈನ್ ಇನ್' },
@@ -71,6 +74,7 @@ export default function Login({ lang }: LoginProps) {
   const navigate = useNavigate();
   const [role, setRole] = useState<'farmer' | 'consumer'>('farmer');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [farmerName, setFarmerName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -78,7 +82,7 @@ export default function Login({ lang }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [listeningField, setListeningField] = useState<'aadhaar' | 'password' | null>(null);
+  const [listeningField, setListeningField] = useState<'name' | 'aadhaar' | 'password' | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const stopListening = useCallback(() => {
@@ -89,7 +93,7 @@ export default function Login({ lang }: LoginProps) {
     setListeningField(null);
   }, []);
 
-  const startVoiceInput = useCallback((field: 'aadhaar' | 'password') => {
+  const startVoiceInput = useCallback((field: 'name' | 'aadhaar' | 'password') => {
     if (listeningField) {
       stopListening();
       return;
@@ -104,7 +108,7 @@ export default function Login({ lang }: LoginProps) {
     setListeningField(field);
 
     // Prompt the user
-    const promptKey = field === 'aadhaar' ? 'login.voice_aadhaar_prompt' : 'login.voice_password_prompt';
+    const promptKey = field === 'name' ? 'login.voice_name_prompt' : field === 'aadhaar' ? 'login.voice_aadhaar_prompt' : 'login.voice_password_prompt';
     speak(lt(promptKey, lang), lang);
 
     // Delay recognition start so TTS prompt finishes
@@ -119,16 +123,17 @@ export default function Login({ lang }: LoginProps) {
       recognition.onresult = (event: any) => {
         const transcript: string = event.results[0][0].transcript;
 
-        if (field === 'aadhaar') {
-          // Extract digits from speech (e.g., "one two three four..." or "1234...")
+        if (field === 'name') {
+          const name = transcript.trim();
+          setFarmerName(name);
+          speak(`${lt('login.voice_heard', lang)} ${name}. ${lt('login.name_accepted', lang)}`, lang);
+        } else if (field === 'aadhaar') {
           const wordToDigit: Record<string, string> = {
             zero: '0', one: '1', two: '2', three: '3', four: '4',
             five: '5', six: '6', seven: '7', eight: '8', nine: '9',
             oh: '0', o: '0',
-            // Hindi
             'शून्य': '0', 'एक': '1', 'दो': '2', 'तीन': '3', 'चार': '4',
             'पांच': '5', 'छह': '6', 'सात': '7', 'आठ': '8', 'नौ': '9',
-            // Kannada
             'ಸೊನ್ನೆ': '0', 'ಒಂದು': '1', 'ಎರಡು': '2', 'ಮೂರು': '3', 'ನಾಲ್ಕು': '4',
             'ಐದು': '5', 'ಆರು': '6', 'ಏಳು': '7', 'ಎಂಟು': '8', 'ಒಂಬತ್ತು': '9',
           };
@@ -143,11 +148,9 @@ export default function Login({ lang }: LoginProps) {
           }
           const formatted = formatAadhaar(digits);
           setAadhaar(formatted);
-          // Confirm back
           const spokenDigits = digits.split('').join(' ');
           speak(`${lt('login.voice_heard', lang)} ${spokenDigits}. ${lt('login.voice_correct', lang)}`, lang);
         } else {
-          // Password field — use raw transcript
           setPassword(transcript.trim());
           speak(lt('login.pin_accepted', lang), lang);
         }
@@ -179,9 +182,9 @@ export default function Login({ lang }: LoginProps) {
           options: {
             emailRedirectTo: window.location.origin,
             data: {
-              display_name: email.split('@')[0],
+              display_name: isFarmer && farmerName ? farmerName : email.split('@')[0],
               role,
-              aadhaar_kcc: role === 'farmer' ? aadhaar.replace(/-/g, '') : null,
+              aadhaar_kcc: isFarmer ? aadhaar.replace(/-/g, '') : null,
             },
           },
         });
@@ -227,6 +230,31 @@ export default function Login({ lang }: LoginProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="glass-card rounded-2xl p-6 space-y-4">
+          {/* Name — farmer only */}
+          {isFarmer && (
+            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} className="space-y-1.5">
+              <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5" /> {lt('login.name', lang)}
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={farmerName}
+                  onChange={(e) => setFarmerName(e.target.value)}
+                  className="w-full rounded-xl border border-input bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring pr-12"
+                  placeholder={lt('login.name', lang)}
+                />
+                <button
+                  type="button"
+                  onClick={() => startVoiceInput('name')}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full transition-all ${listeningField === 'name' ? 'bg-destructive text-destructive-foreground animate-pulse' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+                >
+                  {listeningField === 'name' ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Email */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-muted-foreground flex items-center gap-1.5">
