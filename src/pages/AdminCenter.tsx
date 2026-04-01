@@ -13,7 +13,7 @@ function formatTime(ts: number) {
 }
 
 // Simple map dots positioned on a rectangle "map"
-function HarvestMap({ records }: { records: CropRecord[] }) {
+function HarvestMap({ records, lang }: { records: CropRecord[]; lang: Language }) {
   return (
     <div className="relative w-full h-64 rounded-2xl bg-accent/50 overflow-hidden border border-border/30">
       {/* Grid lines */}
