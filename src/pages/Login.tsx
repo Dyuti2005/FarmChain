@@ -82,7 +82,7 @@ export default function Login({ lang }: LoginProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [listeningField, setListeningField] = useState<'aadhaar' | 'password' | null>(null);
+  const [listeningField, setListeningField] = useState<'name' | 'aadhaar' | 'password' | null>(null);
   const recognitionRef = useRef<any>(null);
 
   const stopListening = useCallback(() => {
