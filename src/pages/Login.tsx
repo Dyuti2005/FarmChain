@@ -74,6 +74,7 @@ export default function Login({ lang }: LoginProps) {
   const navigate = useNavigate();
   const [role, setRole] = useState<'farmer' | 'consumer'>('farmer');
   const [isSignUp, setIsSignUp] = useState(false);
+  const [farmerName, setFarmerName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
