@@ -90,7 +90,7 @@ export default function AdminCenter({ lang }: AdminProps) {
 
       {/* Map */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mb-8">
-        <HarvestMap records={records} />
+        <HarvestMap records={records} lang={lang} />
       </motion.div>
 
       {/* Dual Stream */}
